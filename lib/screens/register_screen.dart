@@ -5,7 +5,8 @@ class RegisterScreen extends StatefulWidget {
   _RegisterScreenState createState() => _RegisterScreenState();
 }
 
-class _RegisterScreenState extends State<RegisterScreen> {
+class _RegisterScreenState extends State<RegisterScreen>
+    with TickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
@@ -17,12 +18,71 @@ class _RegisterScreenState extends State<RegisterScreen> {
   bool _obscureConfirmPassword = true;
   bool _acceptTerms = false;
 
+  // Animation controllers
+  late AnimationController _fadeController;
+  late AnimationController _slideController;
+  late AnimationController _pulseController;
+  
+  // Animations
+  late Animation<double> _fadeAnimation;
+  late Animation<Offset> _slideAnimation;
+  late Animation<double> _pulseAnimation;
+  late Animation<double> _formAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    
+    _fadeController = AnimationController(
+      duration: Duration(milliseconds: 1200),
+      vsync: this,
+    );
+    
+    _slideController = AnimationController(
+      duration: Duration(milliseconds: 800),
+      vsync: this,
+    );
+    
+    _pulseController = AnimationController(
+      duration: Duration(milliseconds: 2000),
+      vsync: this,
+    );
+
+    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _fadeController, curve: Curves.easeInOut),
+    );
+
+    _slideAnimation = Tween<Offset>(
+      begin: Offset(0, 0.5),
+      end: Offset.zero,
+    ).animate(CurvedAnimation(parent: _slideController, curve: Curves.easeOutBack));
+
+    _pulseAnimation = Tween<double>(begin: 0.8, end: 1.0).animate(
+      CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
+    );
+
+    _formAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _fadeController,
+        curve: Interval(0.3, 1.0, curve: Curves.easeOut),
+      ),
+    );
+
+    // Start animations
+    _fadeController.forward();
+    _slideController.forward();
+    _pulseController.repeat(reverse: true);
+  }
+
   @override
   void dispose() {
     _nameController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
     _confirmController.dispose();
+    _fadeController.dispose();
+    _slideController.dispose();
+    _pulseController.dispose();
     super.dispose();
   }
 
@@ -58,6 +118,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
         SnackBar(
           content: Text('Please accept the terms and conditions'),
           backgroundColor: Colors.red[600],
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         ),
       );
       return;
@@ -66,23 +128,25 @@ class _RegisterScreenState extends State<RegisterScreen> {
     setState(() => _isLoading = true);
     
     try {
-      // Simulate API call - Replace with your actual registration logic
       await Future.delayed(Duration(seconds: 2));
       
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Account created successfully!'),
-          backgroundColor: Colors.green[600],
+          backgroundColor: Colors.orange,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         ),
       );
       
-      // Navigate to login or home screen
       Navigator.pushReplacementNamed(context, '/login');
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Registration failed. Please try again.'),
           backgroundColor: Colors.red[600],
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         ),
       );
     } finally {
@@ -90,274 +154,276 @@ class _RegisterScreenState extends State<RegisterScreen> {
     }
   }
 
+  Widget _buildAnimatedTextField({
+    required TextEditingController controller,
+    required String labelText,
+    required IconData prefixIcon,
+    required String? Function(String?) validator,
+    bool obscureText = false,
+    bool hasToggle = false,
+    VoidCallback? onToggle,
+    double delay = 0.0,
+  }) {
+    return AnimatedBuilder(
+      animation: _formAnimation,
+      builder: (context, child) {
+        return Transform.translate(
+          offset: Offset(0, 30 * (1 - _formAnimation.value)),
+          child: Opacity(
+            opacity: _formAnimation.value,
+            child: Container(
+              margin: EdgeInsets.only(bottom: 16),
+              child: TextFormField(
+                controller: controller,
+                obscureText: obscureText,
+                style: TextStyle(color: Colors.white),
+                decoration: InputDecoration(
+                  labelText: labelText,
+                  labelStyle: TextStyle(color: Colors.grey[400]),
+                  prefixIcon: Icon(prefixIcon, color: Colors.orange),
+                  suffixIcon: hasToggle
+                      ? IconButton(
+                          icon: Icon(
+                            obscureText ? Icons.visibility : Icons.visibility_off,
+                            color: Colors.orange,
+                          ),
+                          onPressed: onToggle,
+                        )
+                      : null,
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: Colors.grey[600]!, width: 1),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: Colors.orange, width: 2),
+                  ),
+                  errorBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: Colors.red, width: 2),
+                  ),
+                  focusedErrorBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: Colors.red, width: 2),
+                  ),
+                  filled: true,
+                  fillColor: Colors.grey[900],
+                  errorStyle: TextStyle(color: Colors.red[300]),
+                ),
+                validator: validator,
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[50],
-      appBar: AppBar(
-        title: Text(
-          "Create Account",
-          style: TextStyle(
-            fontWeight: FontWeight.w600,
-            color: Colors.white,
-          ),
-        ),
-        backgroundColor: Color(0xFF2E7D5F),
-        elevation: 0,
-        centerTitle: true,
-      ),
+      backgroundColor: Colors.black,
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
+          padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 32.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              // App Logo/Icon
-              Container(
-                padding: EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  color: Color(0xFF2E7D5F).withOpacity(0.1),
-                  shape: BoxShape.circle,
+              // Animated Logo
+              FadeTransition(
+                opacity: _fadeAnimation,
+                child: ScaleTransition(
+                  scale: _pulseAnimation,
+                  child: Container(
+                    padding: EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [Colors.orange, Colors.deepOrange],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.orange.withOpacity(0.3),
+                          blurRadius: 20,
+                          spreadRadius: 5,
+                        ),
+                      ],
+                    ),
+                    child: Icon(
+                      Icons.calendar_today_rounded,
+                      size: 60,
+                      color: Colors.black,
+                    ),
+                  ),
                 ),
-                child: Icon(
-                  Icons.calendar_today_rounded,
-                  size: 60,
-                  color: Color(0xFF2E7D5F),
-                ),
-              ),
-              
-              SizedBox(height: 24),
-              
-              Text(
-                "Join CalendarPro",
-                style: TextStyle(
-                  fontSize: 28,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.grey[800],
-                ),
-              ),
-              
-              SizedBox(height: 8),
-              
-              Text(
-                "Organize your life with smart scheduling",
-                style: TextStyle(
-                  fontSize: 16,
-                  color: Colors.grey[600],
-                ),
-                textAlign: TextAlign.center,
               ),
               
               SizedBox(height: 32),
               
+              // Animated Title
+              SlideTransition(
+                position: _slideAnimation,
+                child: FadeTransition(
+                  opacity: _fadeAnimation,
+                  child: Column(
+                    children: [
+                      ShaderMask(
+                        shaderCallback: (bounds) => LinearGradient(
+                          colors: [Colors.orange, Colors.deepOrange],
+                        ).createShader(bounds),
+                        child: Text(
+                          "Join CalendarPro",
+                          style: TextStyle(
+                            fontSize: 32,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                      
+                      SizedBox(height: 8),
+                      
+                      Text(
+                        "Organize your life with smart scheduling",
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: Colors.grey[400],
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              
+              SizedBox(height: 40),
+              
+              // Animated Form
               Form(
                 key: _formKey,
                 child: Column(
                   children: [
-                    // Full Name Field
-                    TextFormField(
+                    _buildAnimatedTextField(
                       controller: _nameController,
-                      decoration: InputDecoration(
-                        labelText: "Full Name",
-                        prefixIcon: Icon(Icons.person_outline, color: Color(0xFF2E7D5F)),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide(color: Color(0xFF2E7D5F), width: 2),
-                        ),
-                        filled: true,
-                        fillColor: Colors.white,
-                      ),
-                      validator: (value) =>
-                          value!.isEmpty ? "Full name is required" : null,
+                      labelText: "Full Name",
+                      prefixIcon: Icons.person_outline,
+                      validator: (value) => value!.isEmpty ? "Full name is required" : null,
+                      delay: 0.1,
                     ),
                     
-                    SizedBox(height: 16),
-                    
-                    // Email Field
-                    TextFormField(
+                    _buildAnimatedTextField(
                       controller: _emailController,
-                      keyboardType: TextInputType.emailAddress,
-                      decoration: InputDecoration(
-                        labelText: "Email Address",
-                        prefixIcon: Icon(Icons.email_outlined, color: Color(0xFF2E7D5F)),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide(color: Color(0xFF2E7D5F), width: 2),
-                        ),
-                        filled: true,
-                        fillColor: Colors.white,
-                      ),
+                      labelText: "Email Address",
+                      prefixIcon: Icons.email_outlined,
                       validator: _validateEmail,
+                      delay: 0.2,
                     ),
                     
-                    SizedBox(height: 16),
-                    
-                    // Password Field
-                    TextFormField(
+                    _buildAnimatedTextField(
                       controller: _passwordController,
-                      obscureText: _obscurePassword,
-                      decoration: InputDecoration(
-                        labelText: "Password",
-                        prefixIcon: Icon(Icons.lock_outline, color: Color(0xFF2E7D5F)),
-                        suffixIcon: IconButton(
-                          icon: Icon(
-                            _obscurePassword ? Icons.visibility : Icons.visibility_off,
-                            color: Color(0xFF2E7D5F),
-                          ),
-                          onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
-                        ),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide(color: Color(0xFF2E7D5F), width: 2),
-                        ),
-                        filled: true,
-                        fillColor: Colors.white,
-                      ),
+                      labelText: "Password",
+                      prefixIcon: Icons.lock_outline,
                       validator: _validatePassword,
+                      obscureText: _obscurePassword,
+                      hasToggle: true,
+                      onToggle: () => setState(() => _obscurePassword = !_obscurePassword),
+                      delay: 0.3,
                     ),
                     
-                    SizedBox(height: 16),
-                    
-                    // Confirm Password Field
-                    TextFormField(
+                    _buildAnimatedTextField(
                       controller: _confirmController,
-                      obscureText: _obscureConfirmPassword,
-                      decoration: InputDecoration(
-                        labelText: "Confirm Password",
-                        prefixIcon: Icon(Icons.lock_outline, color: Color(0xFF2E7D5F)),
-                        suffixIcon: IconButton(
-                          icon: Icon(
-                            _obscureConfirmPassword ? Icons.visibility : Icons.visibility_off,
-                            color: Color(0xFF2E7D5F),
-                          ),
-                          onPressed: () => setState(() => _obscureConfirmPassword = !_obscureConfirmPassword),
-                        ),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide(color: Color(0xFF2E7D5F), width: 2),
-                        ),
-                        filled: true,
-                        fillColor: Colors.white,
-                      ),
+                      labelText: "Confirm Password",
+                      prefixIcon: Icons.lock_outline,
                       validator: (value) => value != _passwordController.text
                           ? "Passwords don't match"
                           : null,
+                      obscureText: _obscureConfirmPassword,
+                      hasToggle: true,
+                      onToggle: () => setState(() => _obscureConfirmPassword = !_obscureConfirmPassword),
+                      delay: 0.4,
                     ),
                     
-                    SizedBox(height: 20),
-                    
-                    // Terms and Conditions Checkbox
-                    Row(
-                      children: [
-                        Checkbox(
-                          value: _acceptTerms,
-                          onChanged: (value) => setState(() => _acceptTerms = value ?? false),
-                          activeColor: Color(0xFF2E7D5F),
-                        ),
-                        Expanded(
-                          child: Text.rich(
-                            TextSpan(
-                              text: "I agree to the ",
-                              style: TextStyle(color: Colors.grey[600]),
+                    // Terms and Conditions
+                    AnimatedBuilder(
+                      animation: _formAnimation,
+                      builder: (context, child) {
+                        return Transform.translate(
+                          offset: Offset(0, 30 * (1 - _formAnimation.value)),
+                          child: Opacity(
+                            opacity: _formAnimation.value,
+                            child: Row(
                               children: [
-                                TextSpan(
-                                  text: "Terms of Service",
-                                  style: TextStyle(
-                                    color: Color(0xFF2E7D5F),
-                                    fontWeight: FontWeight.w600,
-                                  ),
+                                Checkbox(
+                                  value: _acceptTerms,
+                                  onChanged: (value) => setState(() => _acceptTerms = value ?? false),
+                                  activeColor: Colors.orange,
+                                  checkColor: Colors.black,
                                 ),
-                                TextSpan(text: " and "),
-                                TextSpan(
-                                  text: "Privacy Policy",
-                                  style: TextStyle(
-                                    color: Color(0xFF2E7D5F),
-                                    fontWeight: FontWeight.w600,
+                                Expanded(
+                                  child: Text.rich(
+                                    TextSpan(
+                                      text: "I agree to the ",
+                                      style: TextStyle(color: Colors.grey[400]),
+                                      children: [
+                                        TextSpan(
+                                          text: "Terms of Service",
+                                          style: TextStyle(
+                                            color: Colors.orange,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                        TextSpan(text: " and "),
+                                        TextSpan(
+                                          text: "Privacy Policy",
+                                          style: TextStyle(
+                                            color: Colors.orange,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
                                   ),
                                 ),
                               ],
                             ),
                           ),
-                        ),
-                      ],
+                        );
+                      },
                     ),
                     
-                    SizedBox(height: 24),
+                    SizedBox(height: 32),
                     
-                    // Register Button
-                    SizedBox(
-                      width: double.infinity,
-                      height: 50,
-                      child: ElevatedButton(
-                        onPressed: _isLoading ? null : _submitForm,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Color(0xFF2E7D5F),
-                          foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          elevation: 2,
-                        ),
-                        child: _isLoading
-                            ? SizedBox(
-                                height: 20,
-                                width: 20,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                    // Animated Register Button
+                    AnimatedBuilder(
+                      animation: _formAnimation,
+                      builder: (context, child) {
+                        return Transform.translate(
+                          offset: Offset(0, 30 * (1 - _formAnimation.value)),
+                          child: Opacity(
+                            opacity: _formAnimation.value,
+                            child: Container(
+                              width: double.infinity,
+                              height: 56,
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  colors: [Colors.orange, Colors.deepOrange],
+                                  begin: Alignment.centerLeft,
+                                  end: Alignment.centerRight,
                                 ),
-                              )
-                            : Text(
-                                "Create Account",
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w600,
-                                ),
+                                borderRadius: BorderRadius.circular(12),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.orange.withOpacity(0.3),
+                                    blurRadius: 15,
+                                    offset: Offset(0, 5),
+                                  ),
+                                ],
                               ),
-                      ),
-                    ),
-                    
-                    SizedBox(height: 24),
-                    
-                    // Login Link
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          "Already have an account? ",
-                          style: TextStyle(color: Colors.grey[600]),
-                        ),
-                        GestureDetector(
-                          onTap: () => Navigator.pushNamed(context, '/login'),
-                          child: Text(
-                            "Sign In",
-                            style: TextStyle(
-                              color: Color(0xFF2E7D5F),
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
+                              child: ElevatedButton(
+                                onPressed: _isLoading ? null : _submitForm,
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.transparent,
+                                  shadowColor: Colors.transparent,
+                                  shape: RoundedR

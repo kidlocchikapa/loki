@@ -5,7 +5,8 @@ class LoginScreen extends StatefulWidget {
   _LoginScreenState createState() => _LoginScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen> {
+class _LoginScreenState extends State<LoginScreen>
+    with TickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
@@ -14,10 +15,69 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _obscurePassword = true;
   bool _rememberMe = false;
 
+  // Animation controllers
+  late AnimationController _fadeController;
+  late AnimationController _slideController;
+  late AnimationController _pulseController;
+  
+  // Animations
+  late Animation<double> _fadeAnimation;
+  late Animation<Offset> _slideAnimation;
+  late Animation<double> _pulseAnimation;
+  late Animation<double> _formAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    
+    _fadeController = AnimationController(
+      duration: Duration(milliseconds: 1200),
+      vsync: this,
+    );
+    
+    _slideController = AnimationController(
+      duration: Duration(milliseconds: 800),
+      vsync: this,
+    );
+    
+    _pulseController = AnimationController(
+      duration: Duration(milliseconds: 2000),
+      vsync: this,
+    );
+
+    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _fadeController, curve: Curves.easeInOut),
+    );
+
+    _slideAnimation = Tween<Offset>(
+      begin: Offset(0, 0.5),
+      end: Offset.zero,
+    ).animate(CurvedAnimation(parent: _slideController, curve: Curves.easeOutBack));
+
+    _pulseAnimation = Tween<double>(begin: 0.8, end: 1.0).animate(
+      CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
+    );
+
+    _formAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _fadeController,
+        curve: Interval(0.3, 1.0, curve: Curves.easeOut),
+      ),
+    );
+
+    // Start animations
+    _fadeController.forward();
+    _slideController.forward();
+    _pulseController.repeat(reverse: true);
+  }
+
   @override
   void dispose() {
     _emailController.dispose();
     _passwordController.dispose();
+    _fadeController.dispose();
+    _slideController.dispose();
+    _pulseController.dispose();
     super.dispose();
   }
 
@@ -44,7 +104,9 @@ class _LoginScreenState extends State<LoginScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Welcome back!'),
-          backgroundColor: Colors.green[600],
+          backgroundColor: Colors.orange,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         ),
       );
       
@@ -55,6 +117,8 @@ class _LoginScreenState extends State<LoginScreen> {
         SnackBar(
           content: Text('Login failed. Please check your credentials.'),
           backgroundColor: Colors.red[600],
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         ),
       );
     } finally {
@@ -68,19 +132,32 @@ class _LoginScreenState extends State<LoginScreen> {
       builder: (BuildContext context) {
         final _resetEmailController = TextEditingController();
         return AlertDialog(
-          title: Text('Reset Password'),
+          backgroundColor: Colors.grey[900],
+          title: Text('Reset Password', style: TextStyle(color: Colors.white)),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text('Enter your email address to receive a password reset link.'),
+              Text(
+                'Enter your email address to receive a password reset link.',
+                style: TextStyle(color: Colors.grey[400]),
+              ),
               SizedBox(height: 16),
               TextFormField(
                 controller: _resetEmailController,
+                style: TextStyle(color: Colors.white),
                 decoration: InputDecoration(
                   labelText: 'Email Address',
-                  border: OutlineInputBorder(
+                  labelStyle: TextStyle(color: Colors.grey[400]),
+                  enabledBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
+                    borderSide: BorderSide(color: Colors.grey[600]!),
                   ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: BorderSide(color: Colors.orange),
+                  ),
+                  filled: true,
+                  fillColor: Colors.grey[800],
                 ),
                 keyboardType: TextInputType.emailAddress,
               ),
@@ -89,7 +166,7 @@ class _LoginScreenState extends State<LoginScreen> {
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
-              child: Text('Cancel'),
+              child: Text('Cancel', style: TextStyle(color: Colors.grey[400])),
             ),
             ElevatedButton(
               onPressed: () {
@@ -97,12 +174,14 @@ class _LoginScreenState extends State<LoginScreen> {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     content: Text('Password reset link sent to your email'),
-                    backgroundColor: Colors.green[600],
+                    backgroundColor: Colors.orange,
+                    behavior: SnackBarBehavior.floating,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   ),
                 );
               },
-              style: ElevatedButton.styleFrom(backgroundColor: Color(0xFF2E7D5F)),
-              child: Text('Send Link', style: TextStyle(color: Colors.white)),
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.orange),
+              child: Text('Send Link', style: TextStyle(color: Colors.black)),
             ),
           ],
         );
@@ -120,7 +199,9 @@ class _LoginScreenState extends State<LoginScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Signed in with Google successfully!'),
-          backgroundColor: Colors.green[600],
+          backgroundColor: Colors.orange,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         ),
       );
       
@@ -130,6 +211,8 @@ class _LoginScreenState extends State<LoginScreen> {
         SnackBar(
           content: Text('Google Sign In failed. Please try again.'),
           backgroundColor: Colors.red[600],
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         ),
       );
     } finally {
@@ -137,244 +220,369 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
+  Widget _buildAnimatedTextField({
+    required TextEditingController controller,
+    required String labelText,
+    required IconData prefixIcon,
+    required String? Function(String?) validator,
+    bool obscureText = false,
+    bool hasToggle = false,
+    VoidCallback? onToggle,
+  }) {
+    return AnimatedBuilder(
+      animation: _formAnimation,
+      builder: (context, child) {
+        return Transform.translate(
+          offset: Offset(0, 30 * (1 - _formAnimation.value)),
+          child: Opacity(
+            opacity: _formAnimation.value,
+            child: Container(
+              margin: EdgeInsets.only(bottom: 16),
+              child: TextFormField(
+                controller: controller,
+                obscureText: obscureText,
+                style: TextStyle(color: Colors.white),
+                decoration: InputDecoration(
+                  labelText: labelText,
+                  labelStyle: TextStyle(color: Colors.grey[400]),
+                  prefixIcon: Icon(prefixIcon, color: Colors.orange),
+                  suffixIcon: hasToggle
+                      ? IconButton(
+                          icon: Icon(
+                            obscureText ? Icons.visibility : Icons.visibility_off,
+                            color: Colors.orange,
+                          ),
+                          onPressed: onToggle,
+                        )
+                      : null,
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: Colors.grey[600]!, width: 1),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: Colors.orange, width: 2),
+                  ),
+                  errorBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: Colors.red, width: 2),
+                  ),
+                  focusedErrorBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: Colors.red, width: 2),
+                  ),
+                  filled: true,
+                  fillColor: Colors.grey[900],
+                  errorStyle: TextStyle(color: Colors.red[300]),
+                ),
+                validator: validator,
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[50],
-      appBar: AppBar(
-        title: Text(
-          "Welcome Back",
-          style: TextStyle(
-            fontWeight: FontWeight.w600,
-            color: Colors.white,
-          ),
-        ),
-        backgroundColor: Color(0xFF2E7D5F),
-        elevation: 0,
-        centerTitle: true,
-      ),
+      backgroundColor: Colors.black,
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 32.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              // App Logo/Icon
-              Container(
-                padding: EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  color: Color(0xFF2E7D5F).withOpacity(0.1),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  Icons.calendar_today_rounded,
-                  size: 60,
-                  color: Color(0xFF2E7D5F),
+              // Animated Logo
+              FadeTransition(
+                opacity: _fadeAnimation,
+                child: ScaleTransition(
+                  scale: _pulseAnimation,
+                  child: Container(
+                    padding: EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [Colors.orange, Colors.deepOrange],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.orange.withOpacity(0.3),
+                          blurRadius: 20,
+                          spreadRadius: 5,
+                        ),
+                      ],
+                    ),
+                    child: Icon(
+                      Icons.calendar_today_rounded,
+                      size: 60,
+                      color: Colors.black,
+                    ),
+                  ),
                 ),
               ),
               
-              SizedBox(height: 24),
+              SizedBox(height: 32),
               
-              Text(
-                "Sign In",
-                style: TextStyle(
-                  fontSize: 32,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.grey[800],
+              // Animated Title
+              SlideTransition(
+                position: _slideAnimation,
+                child: FadeTransition(
+                  opacity: _fadeAnimation,
+                  child: Column(
+                    children: [
+                      ShaderMask(
+                        shaderCallback: (bounds) => LinearGradient(
+                          colors: [Colors.orange, Colors.deepOrange],
+                        ).createShader(bounds),
+                        child: Text(
+                          "Welcome Back",
+                          style: TextStyle(
+                            fontSize: 32,
+                            fontWeight: FontWeight. ld.bold,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                      
+                      SizedBox(height: 8),
+                      
+                      Text(
+                        "Access your calendar and stay organized",
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: Colors.grey[400],
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-              
-              SizedBox(height: 8),
-              
-              Text(
-                "Access your calendar and stay organized",
-                style: TextStyle(
-                  fontSize: 16,
-                  color: Colors.grey[600],
-                ),
-                textAlign: TextAlign.center,
               ),
               
               SizedBox(height: 40),
               
+              // Animated Form
               Form(
                 key: _formKey,
                 child: Column(
                   children: [
-                    // Email Field
-                    TextFormField(
+                    _buildAnimatedTextField(
                       controller: _emailController,
-                      keyboardType: TextInputType.emailAddress,
-                      decoration: InputDecoration(
-                        labelText: "Email Address",
-                        prefixIcon: Icon(Icons.email_outlined, color: Color(0xFF2E7D5F)),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide(color: Color(0xFF2E7D5F), width: 2),
-                        ),
-                        filled: true,
-                        fillColor: Colors.white,
-                      ),
+                      labelText: "Email Address",
+                      prefixIcon: Icons.email_outlined,
                       validator: _validateEmail,
                     ),
                     
-                    SizedBox(height: 16),
-                    
-                    // Password Field
-                    TextFormField(
+                    _buildAnimatedTextField(
                       controller: _passwordController,
+                      labelText: "Password",
+                      prefixIcon: Icons.lock_outline,
+                      validator: (value) => value!.isEmpty ? "Password is required" : null,
                       obscureText: _obscurePassword,
-                      decoration: InputDecoration(
-                        labelText: "Password",
-                        prefixIcon: Icon(Icons.lock_outline, color: Color(0xFF2E7D5F)),
-                        suffixIcon: IconButton(
-                          icon: Icon(
-                            _obscurePassword ? Icons.visibility : Icons.visibility_off,
-                            color: Color(0xFF2E7D5F),
-                          ),
-                          onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
-                        ),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide(color: Color(0xFF2E7D5F), width: 2),
-                        ),
-                        filled: true,
-                        fillColor: Colors.white,
-                      ),
-                      validator: (value) =>
-                          value!.isEmpty ? "Password is required" : null,
+                      hasToggle: true,
+                      onToggle: () => setState(() => _obscurePassword = !_obscurePassword),
                     ),
-                    
-                    SizedBox(height: 16),
                     
                     // Remember Me & Forgot Password Row
-                    Row(
-                      children: [
-                        Checkbox(
-                          value: _rememberMe,
-                          onChanged: (value) => setState(() => _rememberMe = value ?? false),
-                          activeColor: Color(0xFF2E7D5F),
-                        ),
-                        Text(
-                          "Remember me",
-                          style: TextStyle(color: Colors.grey[600]),
-                        ),
-                        Spacer(),
-                        GestureDetector(
-                          onTap: _forgotPassword,
-                          child: Text(
-                            "Forgot Password?",
-                            style: TextStyle(
-                              color: Color(0xFF2E7D5F),
-                              fontWeight: FontWeight.w600,
+                    AnimatedBuilder(
+                      animation: _formAnimation,
+                      builder: (context, child) {
+                        return Transform.translate(
+                          offset: Offset(0, 30 * (1 - _formAnimation.value)),
+                          child: Opacity(
+                            opacity: _formAnimation.value,
+                            child: Row(
+                              children: [
+                                Checkbox(
+                                  value: _rememberMe,
+                                  onChanged: (value) => setState(() => _rememberMe = value ?? false),
+                                  activeColor: Colors.orange,
+                                  checkColor: Colors.black,
+                                ),
+                                Text(
+                                  "Remember me",
+                                  style: TextStyle(color: Colors.grey[400]),
+                                ),
+                                Spacer(),
+                                GestureDetector(
+                                  onTap: _forgotPassword,
+                                  child: Text(
+                                    "Forgot Password?",
+                                    style: TextStyle(
+                                      color: Colors.orange,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
-                        ),
-                      ],
+                        );
+                      },
                     ),
                     
                     SizedBox(height: 32),
                     
-                    // Login Button
-                    SizedBox(
-                      width: double.infinity,
-                      height: 50,
-                      child: ElevatedButton(
-                        onPressed: _isLoading ? null : _loginUser,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Color(0xFF2E7D5F),
-                          foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          elevation: 2,
-                        ),
-                        child: _isLoading
-                            ? SizedBox(
-                                height: 20,
-                                width: 20,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                    // Animated Login Button
+                    AnimatedBuilder(
+                      animation: _formAnimation,
+                      builder: (context, child) {
+                        return Transform.translate(
+                          offset: Offset(0, 30 * (1 - _formAnimation.value)),
+                          child: Opacity(
+                            opacity: _formAnimation.value,
+                            child: Container(
+                              width: double.infinity,
+                              height: 56,
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  colors: [Colors.orange, Colors.deepOrange],
+                                  begin: Alignment.centerLeft,
+                                  end: Alignment.centerRight,
                                 ),
-                              )
-                            : Text(
-                                "Sign In",
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w600,
+                                borderRadius: BorderRadius.circular(12),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.orange.withOpacity(0.3),
+                                    blurRadius: 15,
+                                    offset: Offset(0, 5),
+                                  ),
+                                ],
+                              ),
+                              child: ElevatedButton(
+                                onPressed: _isLoading ? null : _loginUser,
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.transparent,
+                                  shadowColor: Colors.transparent,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                ),
+                                child: _isLoading
+                                    ? SizedBox(
+                                        height: 20,
+                                        width: 20,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          valueColor: AlwaysStoppedAnimation<Color>(Colors.black),
+                                        ),
+                                      )
+                                    : Text(
+                                        "Sign In",
+                                        style: TextStyle(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.w600,
+                                          color: Colors.black,
+                                        ),
+                                      ),
+                              ),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                    
+                    SizedBox(height: 24),
+                    
+                    // Animated Divider
+                    AnimatedBuilder(
+                      animation: _formAnimation,
+                      builder: (context, child) {
+                        return Transform.translate(
+                          offset: Offset(0, 30 * (1 - _formAnimation.value)),
+                          child: Opacity(
+                            opacity: _formAnimation.value,
+                            child: Row(
+                              children: [
+                                Expanded(child: Divider(color: Colors.grey[600])),
+                                Padding(
+                                  padding: EdgeInsets.symmetric(horizontal: 16),
+                                  child: Text(
+                                    "OR",
+                                    style: TextStyle(
+                                      color: Colors.grey[400],
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                ),
+                                Expanded(child: Divider(color: Colors.grey[600])),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                    
+                    SizedBox(height: 24),
+                    
+                    // Animated Google Sign In Button
+                    AnimatedBuilder(
+                      animation: _formAnimation,
+                      builder: (context, child) {
+                        return Transform.translate(
+                          offset: Offset(0, 30 * (1 - _formAnimation.value)),
+                          child: Opacity(
+                            opacity: _formAnimation.value,
+                            child: SizedBox(
+                              width: double.infinity,
+                              height: 50,
+                              child: OutlinedButton.icon(
+                                onPressed: _isLoading ? null : _signInWithGoogle,
+                                icon: Icon(Icons.g_mobiledata, size: 24, color: Colors.orange),
+                                label: Text(
+                                  "Continue with Google",
+                                  style: TextStyle(color: Colors.white),
+                                ),
+                                style: OutlinedButton.styleFrom(
+                                  side: BorderSide(color: Colors.grey[600]!),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  backgroundColor: Colors.grey[900],
                                 ),
                               ),
-                      ),
-                    ),
-                    
-                    SizedBox(height: 24),
-                    
-                    // Divider
-                    Row(
-                      children: [
-                        Expanded(child: Divider(color: Colors.grey[300])),
-                        Padding(
-                          padding: EdgeInsets.symmetric(horizontal: 16),
-                          child: Text(
-                            "OR",
-                            style: TextStyle(
-                              color: Colors.grey[600],
-                              fontWeight: FontWeight.w500,
                             ),
                           ),
-                        ),
-                        Expanded(child: Divider(color: Colors.grey[300])),
-                      ],
-                    ),
-                    
-                    SizedBox(height: 24),
-                    
-                    // Google Sign In Button
-                    SizedBox(
-                      width: double.infinity,
-                      height: 50,
-                      child: OutlinedButton.icon(
-                        onPressed: _isLoading ? null : _signInWithGoogle,
-                        icon: Icon(Icons.g_mobiledata, size: 24),
-                        label: Text("Continue with Google"),
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: Colors.grey[700],
-                          side: BorderSide(color: Colors.grey[300]!),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                      ),
+                        );
+                      },
                     ),
                     
                     SizedBox(height: 32),
                     
-                    // Register Link
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          "Don't have an account? ",
-                          style: TextStyle(color: Colors.grey[600]),
-                        ),
-                        GestureDetector(
-                          onTap: () => Navigator.pushNamed(context, '/register'),
-                          child: Text(
-                            "Sign Up",
-                            style: TextStyle(
-                              color: Color(0xFF2E7D5F),
-                              fontWeight: FontWeight.w600,
+                    // Animated Register Link
+                    AnimatedBuilder(
+                      animation: _formAnimation,
+                      builder: (context, child) {
+                        return Transform.translate(
+                          offset: Offset(0, 30 * (1 - _formAnimation.value)),
+                          child: Opacity(
+                            opacity: _formAnimation.value,
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Text(
+                                  "Don't have an account? ",
+                                  style: TextStyle(color: Colors.grey[400]),
+                                ),
+                                GestureDetector(
+                                  onTap: () => Navigator.pushNamed(context, '/register'),
+                                  child: Text(
+                                    "Sign Up",
+                                    style: TextStyle(
+                                      color: Colors.orange,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
-                        ),
-                      ],
+                        );
+                      },
                     ),
                   ],
                 ),
