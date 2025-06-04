@@ -1,23 +1,23 @@
 import 'package:flutter/material.dart';
 import 'screens/login_screen.dart';
 import 'screens/register_screen.dart';
-import 'screens/calendar_home_screen.dart'; // Add this import
+import 'screens/calendar_home_screen.dart';
 
 void main() {
-  runApp(MyApp());
+  runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {
+  const MyApp({Key? key}) : super(key: key);
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'CalendarPro Auth',
+      title: 'CalendarPro',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        //ma theme ofanana pama form onse...lol
         brightness: Brightness.dark,
         primarySwatch: Colors.orange,
-        primaryColor: Colors.orange,
         scaffoldBackgroundColor: Colors.black,
         colorScheme: ColorScheme.dark(
           primary: Colors.orange,
@@ -25,12 +25,15 @@ class MyApp extends StatelessWidget {
           background: Colors.black,
           surface: Colors.grey[900]!,
         ),
+        textTheme: const TextTheme(
+          bodyMedium: TextStyle(color: Colors.white),
+        ),
       ),
       initialRoute: '/login',
       routes: {
-        '/login': (context) => LoginScreen(),
-        '/register': (context) => RegisterScreen(),
-        '/home': (context) => CalendarHomeScreen(),
+        '/login': (context) => const LoginScreen(),
+        '/register': (context) => const RegisterScreen(),
+        '/home': (context) => const CalendarHomeScreen(),
       },
     );
   }
