@@ -80,7 +80,7 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
                   padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
                     gradient: const LinearGradient(
-                      colors: [Colors.orange, Colors.deepOrange],
+                      colors: [Colors.white, Colors.blue],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                     ),
