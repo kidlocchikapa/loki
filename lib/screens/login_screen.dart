@@ -87,7 +87,7 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
                     shape: BoxShape.circle,
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.orange.withOpacity(0.3),
+                        color: Colors.blue.withOpacity(0.3),
                         blurRadius: 20,
                         spreadRadius: 5,
                       ),
