@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 class LoginScreen extends StatefulWidget {
-  const LoginScreen({Key? key}) : super(key: key);
+  const LoginScreen({super.key});
 
   @override
   State<LoginScreen> createState() => _LoginScreenState();
@@ -14,7 +14,7 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
   
   bool _isLoading = false;
   bool _obscurePassword = true;
-  bool _rememberMe = false;
+  final bool _rememberMe = false;
 
   late AnimationController _fadeController;
   late Animation<double> _fadeAnimation;

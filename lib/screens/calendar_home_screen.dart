@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 class CalendarHomeScreen extends StatefulWidget {
-  const CalendarHomeScreen({Key? key}) : super(key: key);
+  const CalendarHomeScreen({super.key});
 
   @override
   State<CalendarHomeScreen> createState() => _CalendarHomeScreenState();
